@@ -9,9 +9,11 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 import com.marcus.cursomc.cursomc.services.DBService;
+import com.marcus.cursomc.cursomc.services.EmailService;
+import com.marcus.cursomc.cursomc.services.MockEmailService;
 
 @Configuration
-@Profile("prod")
+@Profile("dev")
 public class DevConfig {
 	
 	@Autowired
@@ -29,6 +31,11 @@ public class DevConfig {
 		
 		dbService.instantiateTestDatabase();		
 		return true;
+	}
+	
+	@Bean
+	public EmailService emailService(){
+		return new MockEmailService();
 	}
 
 }

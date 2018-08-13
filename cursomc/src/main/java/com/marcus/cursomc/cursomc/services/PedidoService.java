@@ -10,9 +10,11 @@ import com.marcus.cursomc.cursomc.domain.ItemPedido;
 import com.marcus.cursomc.cursomc.domain.PagamentoComBoleto;
 import com.marcus.cursomc.cursomc.domain.Pedido;
 import com.marcus.cursomc.cursomc.domain.enums.EstadoPagamento;
+import com.marcus.cursomc.cursomc.repositories.ClienteRepository;
 import com.marcus.cursomc.cursomc.repositories.ItemPedidoRepository;
 import com.marcus.cursomc.cursomc.repositories.PagamentoRepository;
 import com.marcus.cursomc.cursomc.repositories.PedidoRepository;
+import com.marcus.cursomc.cursomc.repositories.ProdutoRepository;
 import com.marcus.cursomc.cursomc.services.exceptions.ObjectNotFoundException;
 
 @Service
@@ -25,12 +27,21 @@ public class PedidoService {
 
 	@Autowired
 	private ItemPedidoRepository itemPedidoRepository;
+	
+	@Autowired
+	private ProdutoRepository produtoRepository;
+	
+	@Autowired
+	private ClienteService clienteService;
 
 	@Autowired
 	private BoletoService boletoService;
 
 	@Autowired
 	private ProdutoService produtoService;
+	
+	@Autowired
+	private EmailService emailService;
 
 	public Pedido find(Integer id) {
 		Optional<Pedido> obj = pedidoService.findById(id);
@@ -40,6 +51,7 @@ public class PedidoService {
 
 	public Pedido insert(Pedido pedido) {
 		pedido.setInstante(new Date());
+		pedido.setCliente(clienteService.find(pedido.getCliente().getId()));
 		pedido.getPagamento().setEstado(EstadoPagamento.PENDENTE);
 		pedido.getPagamento().setPedido(pedido);
 
@@ -53,11 +65,13 @@ public class PedidoService {
 
 		for (ItemPedido item : pedido.getItens()) {
 			item.setDesconto(0.0);
-			item.setPreco(produtoService.find(item.getProduto().getId()).getPreco());
+			item.setProduto(produtoService.find(item.getProduto().getId()));
+			item.setPreco(item.getProduto().getPreco());
 			item.setPedido(pedido);
 		}
 
 		itemPedidoRepository.saveAll(pedido.getItens());
+		emailService.sendOrderConfirmationEmail(pedido);
 
 		return pedido;
 
